@@ -10,19 +10,19 @@ using static HarmonyLib.Code;
 
 namespace AffectTech.Stats
 {
-    internal class SEHacked : ExtStatusEffect
+    internal class SEHacked : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "HACKWarning",
             AltUI.HighlightString("Hacking beams ") + " make " + AltUI.EnemyString("Enemy") +
             " Techs be transferred to your control!  Doesn't work with players, hmmm...", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEHacked();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.Hack;
-        public override StatusType StatType => StatusType.Hacked;
-        public override bool CanDefuse => false;
+        public override StatusTypeDef StatType => StatusTypeDef.Hacked;
+        public override bool GradualSpread => false;
 
 
         public override bool CanAddNewTo(GameObject GO, out bool computing)
@@ -60,7 +60,7 @@ namespace AffectTech.Stats
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             switch (type)
             {

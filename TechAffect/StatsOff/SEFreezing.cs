@@ -7,19 +7,19 @@ using UnityEngine;
 
 namespace AffectTech.Stats
 {
-    internal class SEFreezing : ExtStatusEffect
+    internal class SEFreezing : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "IceWarning",
             AltUI.HighlightString("Cryogenics") + " make " + AltUI.EnemyString("Enemies") +
             " freeze over, making them slower to react!", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEFreezing();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.Cryo;
-        public override StatusType StatType => StatusType.Freezing;
-        public override bool CanDefuse => true;
+        public override StatusTypeDef StatType => StatusTypeDef.Freezing;
+        public override bool GradualSpread => true;
         public override float FirstHitPercent => 0.1f;
 
         public override Vector2 GetColorer(float addVal3, float emitValPercent)
@@ -38,24 +38,24 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
             UpdateSpread();
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpread);
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             switch (inflicted)
             {
-                case StatusType.Overheat:
+                case StatusTypeDef.Overheat:
                     damageMulti *= SubFromVal(damage * 2);
                     return damageMulti == 0;
-                case StatusType.Freezing:
+                case StatusTypeDef.Freezing:
                     AddToVal(damage * 2);
                     if (sourceTank)
                         lastDamageDelay = StatusCondition.RecoverDelay;

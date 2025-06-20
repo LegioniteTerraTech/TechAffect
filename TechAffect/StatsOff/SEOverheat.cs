@@ -7,21 +7,21 @@ using UnityEngine;
 
 namespace AffectTech.Stats
 {
-    internal class SEOverheat : ExtStatusEffect
+    internal class SEOverheat : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "FireWarning",
             AltUI.HighlightString("Flamethrowers") + " make " + AltUI.EnemyString("Enemies") +
             " overheat, making them weaker to attacks!", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
 
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEOverheat();
         }
 
         public override DamageTypesExt DmgType => DamageTypesExt.Fire;
-        public override StatusType StatType => StatusType.Overheat;
-        public override bool CanDefuse => true;
+        public override StatusTypeDef StatType => StatusTypeDef.Overheat;
+        public override bool GradualSpread => true;
         public override float FirstHitPercent => 1.2f;
 
         public override bool IsHelpful(DamageTypesExt type)
@@ -42,13 +42,13 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
             UpdateSpread();
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpread);
         }
 
         protected override void UpdateDecay(float resistance, bool isRecovering)
@@ -60,7 +60,7 @@ namespace AffectTech.Stats
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             switch (type)
             {

@@ -19,7 +19,7 @@ namespace AffectTech
                 try
                 {
                     StatusCondition.InitNewStatus();
-                    ManExtStatusEffects.FirstDelayedInit();
+                    ManStatusEffectsExt.FirstDelayedInit();
                 }
                 catch (Exception e)
                 {

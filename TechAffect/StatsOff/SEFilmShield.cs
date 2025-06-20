@@ -7,19 +7,19 @@ using UnityEngine;
 
 namespace AffectTech.Stats
 {
-    internal class SEFilmShield : ExtStatusEffect
+    internal class SEFilmShield : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "ShieldWarn",
             AltUI.HighlightString("Film Shields") + " protect " + AltUI.ObjectiveString("Blocks") +
             " from status effects and attacks.", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEFilmShield();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.Beneficial;
-        public override StatusType StatType => StatusType.FilmShield;
-        public override bool CanDefuse => true;
+        public override StatusTypeDef StatType => StatusTypeDef.FilmShield;
+        public override bool GradualSpread => true;
         public override float FirstHitPercent => 0;
         public override bool IsHelpful(DamageTypesExt type)
         {
@@ -32,12 +32,12 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpread);
         }
 
         protected override void UpdateDecay(float resistance, bool isRecovering)
@@ -47,7 +47,7 @@ namespace AffectTech.Stats
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti) =>
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti) =>
             StatusInflicted_Shield(damage, inflicted, ref damageMulti);
 
     }

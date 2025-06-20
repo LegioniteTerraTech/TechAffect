@@ -10,19 +10,19 @@ namespace AffectTech.Stats
     /// <summary>
     /// Different from cog jammer - stops weapons from firing instead
     /// </summary>
-    internal class SEJamming : ExtStatusEffect
+    internal class SEJamming : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "JammedWarning",
             AltUI.HighlightString("Weapon Jammers") + " make " + AltUI.EnemyString("Enemies") +
             " weapons stop firing.  Keep them quiet!", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEJamming();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.Jamming;
-        public override StatusType StatType => StatusType.Jamming;
-        public override bool CanDefuse => false;
+        public override StatusTypeDef StatType => StatusTypeDef.Jamming;
+        public override bool GradualSpread => false;
         public override float FirstHitPercent => 1;
 
 
@@ -58,20 +58,20 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpread);
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpread);
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             switch (inflicted)
             {
-                case StatusType.Jamming:
+                case StatusTypeDef.Jamming:
                     AddToVal(damage * 8);
                     break;
             }

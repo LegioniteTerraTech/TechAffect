@@ -15,7 +15,7 @@ namespace AffectTech
     public class StatusCondition : MonoBehaviour
     {   // A Block CAN have more than two statuses at once
 
-        internal static ManExtStatusEffects man;
+        internal static ManStatusEffectsExt man;
         internal static bool ignoreApplyEffect = false;
 
         internal const byte spreadLastFrameDelay = 3;
@@ -65,18 +65,18 @@ namespace AffectTech
         internal byte spreadLastFrame = 0;
         public bool allowModuleUpdate = true;
 
-        internal Dictionary<StatusType, ExtStatusEffect> effects = new Dictionary<StatusType, ExtStatusEffect>();
+        internal Dictionary<StatusTypeDef, StatusEffectSelf> effects = new Dictionary<StatusTypeDef, StatusEffectSelf>();
 
 
         public bool MachineInterference()
         {
-            return effects.ContainsKey(StatusType.EMF) || effects.ContainsKey(StatusType.Freezing);
+            return effects.ContainsKey(StatusTypeDef.EMF) || effects.ContainsKey(StatusTypeDef.Freezing);
         }
         public float GetOpPercent()
         {
-            if (effects.TryGetValue(StatusType.EMF, out var effect) && effect.impactPercent > 0.5f)
+            if (effects.TryGetValue(StatusTypeDef.EMF, out var effect) && effect.impactPercent > 0.5f)
                 return 0;
-            else if (effects.TryGetValue(StatusType.Freezing, out effect))
+            else if (effects.TryGetValue(StatusTypeDef.Freezing, out effect))
                 return 1 - (effect.impactPercent / 1.25f);
             return 1;
         }
@@ -105,7 +105,7 @@ namespace AffectTech
         {
             if (!inited)
             {
-                man = Instantiate(new GameObject("ManStatus"), null, true).AddComponent<ManExtStatusEffects>();
+                man = Instantiate(new GameObject("ManStatus"), null, true).AddComponent<ManStatusEffectsExt>();
                 inited = true;
                 DebugAffectTech.Log("StatusCondition: InitNewStatus");
             }
@@ -152,7 +152,7 @@ namespace AffectTech
             colorsForMoreH.SetValue(ManTechMaterialSwap.inst, t2d2H);
         }
         public static void TryApplyEffect(Damageable damageable, ManDamage.DamageInfo info, 
-            StatusType inflicted, bool doDamage, ref float damageMulti, float affectMulti = 1)
+            StatusTypeDef inflicted, bool doDamage, ref float damageMulti, float affectMulti = 1)
         {
             if (ignoreApplyEffect)
                 return;
@@ -184,7 +184,7 @@ namespace AffectTech
                 SC.renderSwitcher = (byte)SC.effects.Keys.ToList().IndexOf(inflicted);
             }
         }
-        public static StatusCondition AddTo(Damageable damageable, StatusType inflicted)
+        public static StatusCondition AddTo(Damageable damageable, StatusTypeDef inflicted)
         {
             GameObject GO = damageable.Block?.gameObject;
             if (!(bool)GO)
@@ -218,7 +218,7 @@ namespace AffectTech
         /// <param name="info"></param>
         /// <param name="inflicted"></param>
         /// <returns>True if effect can be added</returns>
-        private bool RemainsAfterOtherStatuses(ManDamage.DamageInfo info, StatusType inflicted, ref float damageMulti)
+        private bool RemainsAfterOtherStatuses(ManDamage.DamageInfo info, StatusTypeDef inflicted, ref float damageMulti)
         {
             foreach (var item in effects)
             {
@@ -229,9 +229,9 @@ namespace AffectTech
             }
             return true;
         }
-        public static bool CanAddNewTo(GameObject GO, StatusType inflicted, out bool computing)
+        public static bool CanAddNewTo(GameObject GO, StatusTypeDef inflicted, out bool computing)
         {
-            var value = ManExtStatusEffects.effectsPrefabs[inflicted];
+            var value = ManStatusEffectsExt.effectsPrefabs[inflicted];
             return value.CanAddNewTo(GO, out computing);
         }
 
@@ -242,14 +242,14 @@ namespace AffectTech
             if ((bool)SC)
             {
                 SC.CancelInvoke("Remove");
-                SC.AddEffect(value, StatusType.FilmShield, false, ref temp);
+                SC.AddEffect(value, StatusTypeDef.FilmShield, false, ref temp);
                 return SC;
             }
-            SC = AddTo(damageable, StatusType.FilmShield);
+            SC = AddTo(damageable, StatusTypeDef.FilmShield);
             if (!SC)
                 return null;
 
-            SC.AddEffect(value, StatusType.FilmShield, false, ref temp);
+            SC.AddEffect(value, StatusTypeDef.FilmShield, false, ref temp);
             return SC;
         }
 
@@ -312,57 +312,57 @@ namespace AffectTech
                     //TryApplyEffect(dmg, info, StatusType.Pry, ref damageMulti, 6);
                     break;
                 case DamageTypesExt.Energy:
-                    TryApplyEffect(dmg, info, StatusType.Overheat, harmful, ref damageMulti, 6.4f);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Overheat, harmful, ref damageMulti, 6.4f);
                     break;
                 case DamageTypesExt.Plasma:
-                    TryApplyEffect(dmg, info, StatusType.Overheat, harmful, ref damageMulti, 16f);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Overheat, harmful, ref damageMulti, 16f);
                     break;
                 case DamageTypesExt.Fire:
-                    TryApplyEffect(dmg, info, StatusType.Overheat, harmful, ref damageMulti, 36f);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Overheat, harmful, ref damageMulti, 36f);
                     break;
                 case DamageTypesExt.Bullet:
                     //InitAndOrAdd(dmg, info, StatusType.Freezing, ref damageMulti, 1);
                     //damageMulti = 1;
                     break;
                 case DamageTypesExt.Electric:
-                    TryApplyEffect(dmg, info, StatusType.EMF, harmful, ref damageMulti, 12f);
+                    TryApplyEffect(dmg, info, StatusTypeDef.EMF, harmful, ref damageMulti, 12f);
                     break;
                 case DamageTypesExt.Standard:
                     //InitAndOrAdd(dmg, info, StatusType.Hacked, ref damageMulti);
                     //damageMulti = 1;
                     break;
                 case DamageTypesExt.Cryo:
-                    TryApplyEffect(dmg, info, StatusType.Freezing, harmful, ref damageMulti, 64);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Freezing, harmful, ref damageMulti, 64);
                     break;
                 case DamageTypesExt.EMP:
-                    TryApplyEffect(dmg, info, StatusType.EMF, harmful, ref damageMulti);
+                    TryApplyEffect(dmg, info, StatusTypeDef.EMF, harmful, ref damageMulti);
                     break;
                 case DamageTypesExt.Jamming:
-                    TryApplyEffect(dmg, info, StatusType.Jamming, harmful, ref damageMulti);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Jamming, harmful, ref damageMulti);
                     break;
                 case DamageTypesExt.Hack:
-                    TryApplyEffect(dmg, info, StatusType.Hacked, harmful, ref damageMulti);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Hacked, harmful, ref damageMulti);
                     break;
                 case DamageTypesExt.Acid:
-                    TryApplyEffect(dmg, info, StatusType.Acid, harmful, ref damageMulti);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Acid, harmful, ref damageMulti);
                     break;
                 case DamageTypesExt.Rust:
-                    TryApplyEffect(dmg, info, StatusType.Jamming, harmful, ref damageMulti);
+                    TryApplyEffect(dmg, info, StatusTypeDef.Jamming, harmful, ref damageMulti);
                     break;
             }
             return damageMulti;
         }
 
-        public void AddEffect(float addVal, StatusType type, bool redFlash)
+        public void AddEffect(float addVal, StatusTypeDef type, bool redFlash)
         {
             float damageMulti = 0;
             AddEffect(addVal, type, redFlash, ref damageMulti);
         }
-        public void AddEffect(float addVal, StatusType type, bool redFlash, ref float damageMulti)
+        public void AddEffect(float addVal, StatusTypeDef type, bool redFlash, ref float damageMulti)
         {
-            if (!effects.TryGetValue(type, out ExtStatusEffect effect))
+            if (!effects.TryGetValue(type, out StatusEffectSelf effect))
             {
-                effect = ManExtStatusEffects.CreateEffect(this, type, addVal, ref damageMulti);
+                effect = ManStatusEffectsExt.CreateEffect(this, type, addVal, ref damageMulti);
                 effects.Add(type, effect);
             }
             if (redFlash && redDelay <= RedPulseDelayImpatient)
@@ -371,10 +371,10 @@ namespace AffectTech
         }
         
 
-        internal void DoSpreadStatus(float value, StatusType inflicted)
+        internal void DoSpreadStatus(float value, StatusTypeDef inflicted)
         {
             float multi = 1;
-            ExtStatusEffect ESE = ManExtStatusEffects.effectsPrefabs[inflicted];
+            StatusEffectSelf ESE = ManStatusEffectsExt.effectsPrefabs[inflicted];
             for (int step = 0; step < effects.Count;)
             {
                 var item = effects.ElementAt(step);
@@ -407,7 +407,7 @@ namespace AffectTech
         {
             foreach (var effect in effects)
             {
-                ManExtStatusEffects.ReturnEffectToPool(effect.Value);
+                ManStatusEffectsExt.ReturnEffectToPool(effect.Value);
             }
             effects.Clear();
             ResetRenders();
@@ -419,10 +419,10 @@ namespace AffectTech
             SetAllWorkingComponentsOff(false, 0);
             RemoveFinal();
         }
-        internal void OnRemove(ExtStatusEffect effect)
+        internal void OnRemove(StatusEffectSelf effect)
         {
             effects.Remove(effect.StatType);
-            ManExtStatusEffects.ReturnEffectToPool(effect);
+            ManStatusEffectsExt.ReturnEffectToPool(effect);
 
             if (!effects.Any())
             {
@@ -462,7 +462,7 @@ namespace AffectTech
         {
             return Mathf.Min(1, impactValue / (damageable.MaxHealth * 2f));
         }
-        private float UpdateRenders(ExtStatusEffect effect)
+        private float UpdateRenders(StatusEffectSelf effect)
         {
             //DebugAffectTech.Log("AffectTech: StatusCondition - UpdateRenders");
 

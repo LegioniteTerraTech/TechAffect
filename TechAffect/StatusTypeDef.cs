@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace AffectTech
 {
 
-    public enum StatusType
+    public enum StatusTypeDef
     {
         NULL,
         // Beneficial

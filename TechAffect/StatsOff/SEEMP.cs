@@ -7,19 +7,19 @@ using UnityEngine;
 
 namespace AffectTech.Stats
 {
-    internal class SEEMP : ExtStatusEffect
+    internal class SEEMP : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "EmpWarning",
             AltUI.HighlightString("EMPs") + " make " + AltUI.EnemyString("Enemies") +
             " flinch, making them stop and malfunction!", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEEMP();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.EMP;
-        public override StatusType StatType => StatusType.EMF;
-        public override bool CanDefuse => false;
+        public override StatusTypeDef StatType => StatusTypeDef.EMF;
+        public override bool GradualSpread => false;
         public override float FirstHitPercent => 0;
 
         public override bool CanAddNewTo(GameObject GO, out bool computing)
@@ -52,18 +52,18 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
             lastDamageDelay = StatusCondition.RecoverDelay;
             UpdateSpread();
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpread);
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             switch (type)
             {

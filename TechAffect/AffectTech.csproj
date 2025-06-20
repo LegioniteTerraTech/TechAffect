@@ -60,6 +60,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="TerraTechETCUtil">
       <HintPath>..\..\..\..\Documents\GitHub\TTETCUtil\TerraTechETCUtil\TerraTechETCUtil\obj\Steam\TerraTechETCUtil.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.dll</HintPath>
@@ -323,24 +324,28 @@
     <Compile Include="DamageTypesExtender.cs" />
     <Compile Include="DebugAffectTech.cs" />
     <Compile Include="KickStartAffectTech.cs" />
-    <Compile Include="ManExtStatusEffects.cs" />
+    <Compile Include="StatusEffectExtInst.cs" />
+    <Compile Include="ManStatusEffectsExt.cs" />
     <Compile Include="ModuleRegulator.cs" />
     <Compile Include="PatchesAffectTech.cs" />
     <Compile Include="SpecialDamageType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Stats\SEAcid.cs" />
-    <Compile Include="Stats\SEOverclock.cs" />
-    <Compile Include="Stats\SEPry.cs" />
-    <Compile Include="Stats\SEFilmShield.cs" />
-    <Compile Include="Stats\SEHacked.cs" />
-    <Compile Include="Stats\SEJamming.cs" />
-    <Compile Include="Stats\SEFreezing.cs" />
-    <Compile Include="Stats\SEEMP.cs" />
-    <Compile Include="Stats\SEOverheat.cs" />
+    <Compile Include="StatsOff\SEAcid.cs" />
+    <Compile Include="StatsOff\SEOverclock.cs" />
+    <Compile Include="StatsOff\SEPry.cs" />
+    <Compile Include="StatsOff\SEFilmShield.cs" />
+    <Compile Include="StatsOff\SEHacked.cs" />
+    <Compile Include="StatsOff\SEJamming.cs" />
+    <Compile Include="StatsOff\SEFreezing.cs" />
+    <Compile Include="StatsOff\SEEMP.cs" />
+    <Compile Include="StatsOff\SEOverheat.cs" />
     <Compile Include="StatusCondition.cs" />
-    <Compile Include="ExtStatusEffect.cs" />
+    <Compile Include="StatusEffectSelf.cs" />
     <Compile Include="StatusEffectsWiki.cs" />
-    <Compile Include="StatusType.cs" />
+    <Compile Include="StatusTypeDef.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="StatsDef\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

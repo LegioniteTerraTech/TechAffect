@@ -8,20 +8,20 @@ using static AchievementObject;
 
 namespace AffectTech.Stats
 {
-    internal class SEOverclock : ExtStatusEffect
+    internal class SEOverclock : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "OverclockWarning",
             AltUI.HighlightString("Overclock") + " makes weak " + AltUI.ObjectiveString("Blocks") +
             " faster!", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
 
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEOverclock();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.Beneficial;
-        public override StatusType StatType => StatusType.Overclock;
-        public override bool CanDefuse => true;
+        public override StatusTypeDef StatType => StatusTypeDef.Overclock;
+        public override bool GradualSpread => true;
         public override float FirstHitPercent => 0;
 
         public override Vector2 GetColorer(float addVal3, float emitValPercent)
@@ -36,25 +36,25 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpreadPrewarm);
             UpdateSpread();
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpread);
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             switch (inflicted)
             {
-                case StatusType.Overclock:
+                case StatusTypeDef.Overclock:
                     AddToVal(damage);
                     break;
-                case StatusType.Overheat:
-                case StatusType.EMF:
+                case StatusTypeDef.Overheat:
+                case StatusTypeDef.EMF:
                     damageMulti *= SubFromVal(damage * 2);
                     return damageMulti == 0;
             }

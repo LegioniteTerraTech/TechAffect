@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using TerraTechETCUtil;
 using UnityEngine;
+using static StatusEffect;
 
 namespace AffectTech
 {
-    internal abstract class ExtStatusEffect
+    public abstract class StatusEffectExt
     {
         public const float DiffuseLoss = 15;
         public const float DiffusePercent = 0.9f;
@@ -25,12 +27,92 @@ namespace AffectTech
 
         public const int MinimumVolRqdToHack = 7;
 
+    }
+    public abstract class StatusEffectExtLegacy : StatusEffectExternal
+    {
+        public abstract StatusTypeDef StatType { get; }
+        public override EffectTypes StatusType => (EffectTypes)(Enum.GetValues(typeof(EffectTypes)).Length + (int)StatType);
+        public abstract DamageTypesExt DmgType { get; }
+
+
+    }
+    public abstract class StatusEffectExternal : StatusEffectExt
+    {
+        public abstract EffectTypes StatusType { get; }
+        public abstract StackingTypes StackingType { get; }
+        public abstract float TickInterval { get; }
+        public abstract TargetTeamTypes TargetTeamFlags { get; }
+        public abstract ManDamage.DamageType TriggerDamageType { get; }
+        public abstract bool GradualSpread { get; }
+        /// <summary>
+        /// Does it deal damage to the block it's on?
+        /// </summary>
+        public abstract bool IsHazardous { get; }
+        public virtual bool IsHelpful(DamageTypesExt type) => DamageTypesExt.Beneficial == type;
+
+
+        private StatusEffectExtInst inst;
+
+        internal StatusEffectExtInst Init()
+        {
+            if (inst != null)
+                return inst;
+            inst = ScriptableObject.CreateInstance<StatusEffectExtInst>();
+            inst.Init(StatusType, StackingType, TickInterval, TargetTeamFlags, this);
+            return inst;
+        }
+        internal void DeInit()
+        {
+            if (inst == null)
+                return;
+            UnityEngine.Object.Destroy(inst);
+            inst = null;
+        }
+        public abstract Vector2 GetColorer(float addVal3, float emitValPercent);
+
+        public virtual State ConfigureNew(Visible visible, Visible sourceVisible)
+        {
+            return inst.ConfigureNewDefault(visible, sourceVisible);
+        }
+        public abstract void Configure(State existingEffect);
+
+        public abstract void StackEffect(State existingEffect);
+
+        public virtual bool CanApplyEffectOnVisible(Visible visibleEffectee, Visible visibleEffector)
+        {
+            return inst.CanApplyEffectOnVisibleDefault(visibleEffectee, visibleEffector);
+        }
+
+
+        protected class StateExt : State
+        {
+            protected Transform transform => Visible.transform;
+            protected TankBlock block => Visible.block;
+            protected Damageable dmg => Visible.damageable;
+            public StateExt(Visible affecteeVisible, Visible affectorVisible, EffectTypes type) : base(affecteeVisible, affectorVisible, type)
+            {
+
+            }
+        }
+
+    }
+    /// <summary>
+    /// For defensive effects
+    /// </summary>
+    public abstract class StatusEffectSelf : StatusEffectExt
+    {
         protected float t2d2H => StatusCondition.t2d2H;
+
+        internal StatusEffect vInst;
+        public StatusEffectSelf()
+        {
+            vInst = ScriptableObject.CreateInstance<StatusEffectExtInst>();
+        }
 
 
         public virtual DamageTypesExt DmgType => DamageTypesExt.Standard;
-        public virtual StatusType StatType => StatusType.NULL;
-        public virtual bool CanDefuse => false;
+        public virtual StatusTypeDef StatType => StatusTypeDef.NULL;
+        public virtual bool GradualSpread => false;
         public virtual float FirstHitPercent => 1;
         /// <summary>
         /// Does it deal damage to the block it's on?
@@ -65,7 +147,7 @@ namespace AffectTech
         internal float impactExcessProcessing = 0;
         internal float impactPercent => Mathf.Min(1, impactValue / (dmg.MaxHealth * 2f));
 
-        public abstract ExtStatusEffect Instantiate();
+        public abstract StatusEffectSelf Instantiate();
         public virtual bool CanAddNewTo(GameObject GO, out bool computing)
         {
             bool isWeapon = GO.GetComponent<ModuleWeapon>();
@@ -105,34 +187,34 @@ namespace AffectTech
         public virtual void DeInit() { }
 
 
-        protected bool StatusInflicted_Shield(float damage, StatusType stat, ref float damageMulti)
+        protected bool StatusInflicted_Shield(float damage, StatusTypeDef stat, ref float damageMulti)
         {
             switch (stat)
             {
-                case StatusType.NULL:
+                case StatusTypeDef.NULL:
                     damageMulti *= SubFromVal(damage);
                     return damageMulti == 0;
-                case StatusType.FilmShield:
+                case StatusTypeDef.FilmShield:
                     AddToVal(damage);
                     break;
-                case StatusType.EMF:
+                case StatusTypeDef.EMF:
                     damageMulti *= SubFromVal(damage * 4);//(StatusType)((int)info.DamageType - 4));
                     if (SC.redDelay <= StatusCondition.RedPulseDelayImpatient)
                         SC.redDelay = StatusCondition.RedPulseDelayShort;
                     return damageMulti == 0;
-                case StatusType.Overheat:
+                case StatusTypeDef.Overheat:
                     damageMulti *= SubFromVal(damage * 0.25f);
                     return damageMulti == 0;
-                case StatusType.Freezing:
+                case StatusTypeDef.Freezing:
                     damageMulti *= SubFromVal(damage);
                     return damageMulti == 0;
-                case StatusType.Jamming:
+                case StatusTypeDef.Jamming:
                     damageMulti *= SubFromVal(damage);
                     return damageMulti == 0;
-                case StatusType.Hacked:
+                case StatusTypeDef.Hacked:
                     damageMulti *= SubFromVal(damage);
                     return damageMulti == 0;
-                case StatusType.Acid:
+                case StatusTypeDef.Acid:
                     damageMulti *= SubFromVal(damage);
                     return damageMulti == 0;
                 default:
@@ -142,9 +224,9 @@ namespace AffectTech
         }
 
         internal bool StatusInflicted_Internal(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
-            if (inflicted == StatusType.FilmShield && 
+            if (inflicted == StatusTypeDef.FilmShield && 
                 !StatusInflicted_Shield(damage, inflicted, ref damageMulti))
                 return false;
             return StatusInflicted(damage, type,
@@ -158,7 +240,7 @@ namespace AffectTech
         /// <param name="val"></param>
         /// <returns>True if this effect should be kept intact</returns>
         public abstract bool StatusInflicted(float damage, DamageTypesExt type, 
-            StatusType inflicted, Tank sourceTank, ref float damageMulti);
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti);
 
         internal bool MainStatusUpdate(float resistance, bool isRecovering)
         {
@@ -228,8 +310,8 @@ namespace AffectTech
         }
         public void UpdateSpreadPrewarm()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpread);
         }
         public void UpdateSpread()
         {
@@ -237,7 +319,7 @@ namespace AffectTech
                 SC.spreadLastFrame--;
             else if (impactExcess > 0)
             {
-                ManExtStatusEffects.PrepSpread(this);
+                ManStatusEffectsExt.PrepSpread(this);
                 impactExcessProcessing = impactExcess;
                 impactExcess = 0;
             }

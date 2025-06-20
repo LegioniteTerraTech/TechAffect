@@ -7,19 +7,19 @@ using UnityEngine;
 
 namespace AffectTech.Stats
 {
-    internal class SEPry : ExtStatusEffect
+    internal class SEPry : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "PryWarning",
             AltUI.HighlightString("Impacts") + " make " + AltUI.ObjectiveString("Blocks") +
             " weaker, making them easier to detach!", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEPry();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.Impact;
-        public override StatusType StatType => StatusType.Pry;
-        public override bool CanDefuse => false;
+        public override StatusTypeDef StatType => StatusTypeDef.Pry;
+        public override bool GradualSpread => false;
 
 
         public override Vector2 GetColorer(float addVal3, float emitValPercent)
@@ -28,12 +28,12 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.spreadUpdate.Subscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Subscribe(UpdateSpread);
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
-            ManExtStatusEffects.spreadUpdate.Unsubscribe(UpdateSpread);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpreadPrewarm);
+            ManStatusEffectsExt.spreadUpdate.Unsubscribe(UpdateSpread);
         }
 
         protected override void UpdateDecay(float resistance, bool isRecovering)
@@ -46,7 +46,7 @@ namespace AffectTech.Stats
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type,
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             if (type == DamageTypesExt.Cutting)
             {

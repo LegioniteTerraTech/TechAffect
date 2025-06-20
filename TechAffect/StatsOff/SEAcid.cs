@@ -4,22 +4,79 @@ using System.Linq;
 using System.Text;
 using TerraTechETCUtil;
 using UnityEngine;
+using static StatusEffect;
 
 namespace AffectTech.Stats
 {
-    internal class SEAcid : ExtStatusEffect
+    /// <summary>
+    ///  Process of converting SEAcid to vanilla code-reliant
+    /// </summary>
+    internal class SEAcid2 : StatusEffectExtLegacy
+    {
+        public override StatusTypeDef StatType => StatusTypeDef.Acid;
+        public override StackingTypes StackingType => StackingTypes.StackEffect;
+        public override float TickInterval => 1.0f;
+        public override TargetTeamTypes TargetTeamFlags => TargetTeamTypes.Enemies;
+        public override ManDamage.DamageType TriggerDamageType => (ManDamage.DamageType)DamageTypesExt.Acid;
+        public override State ConfigureNew(Visible visible, Visible sourceVisible)
+        {
+            AcidState AS = new AcidState(visible, sourceVisible, StatusType);
+            Configure(AS);
+            return AS;
+        }
+        public override void Configure(State existingEffect)
+        {
+        }
+
+        public override void StackEffect(State existingEffect)
+        {
+            AcidState AS = existingEffect as AcidState;
+            AS.impactValue += 
+        }
+
+        public override bool CanApplyEffectOnVisible(Visible visibleEffectee, Visible visibleEffector)
+        {
+            return base.CanApplyEffectOnVisible(visibleEffectee, visibleEffector);
+        }
+        protected class AcidState : StateExt
+        {
+            internal float impactValue = 0;
+            public AcidState(Visible affecteeVisible, Visible affectorVisible, EffectTypes type) : base(affecteeVisible, affectorVisible, type)
+            {
+
+            }
+
+            public override void OnTick()
+            {
+                StatusCondition.ignoreApplyEffect = true;
+                //SC.redDelay = StatusCondition.RedPulseDelay;
+                if (ManNetwork.IsHost)
+                {
+                    ManDamage.DamageInfo newDMG = StatusCondition.MakeAcid(null, null);
+                    newDMG.ApplyDamageMultiplier(block.filledCells.Length * impactValue * 0.25f);
+                    ManDamage.inst.DealDamage(newDMG, dmg);
+                }
+                else
+                {
+                    block.damage.MultiplayerFakeDamagePulse();
+                }
+                StatusCondition.ignoreApplyEffect = false;
+            }
+        }
+    }
+    internal class SEAcid : StatusEffectSelf
     {
         internal static ExtUsageHint.UsageHint hint = new ExtUsageHint.UsageHint(KickStart.name, "AcidWarning",
             AltUI.HighlightString("Acid") + " deals damage to " + AltUI.ObjectiveString("blocks") +
             " over time!", 3.5f, true);
         protected override ExtUsageHint.UsageHint hintStatus => hint;
-        public override ExtStatusEffect Instantiate()
+        public override StatusEffectSelf Instantiate()
         {
             return new SEAcid();
         }
         public override DamageTypesExt DmgType => DamageTypesExt.Acid;
-        public override StatusType StatType => StatusType.Acid;
-        public override bool CanDefuse => false;
+        public override StatusTypeDef StatType => StatusTypeDef.Acid;
+        public override bool GradualSpread => false;
         public override float FirstHitPercent => 1f;
 
         public override Vector2 GetColorer(float addVal3, float emitValPercent)
@@ -41,16 +98,16 @@ namespace AffectTech.Stats
         }
         public override void InitPostEvent()
         {
-            ManExtStatusEffects.acidUpdate.Subscribe(UpdateAcid);
+            ManStatusEffectsExt.acidUpdate.Subscribe(UpdateAcid);
             UpdateSpread();
         }
         public override void DeInit()
         {
-            ManExtStatusEffects.acidUpdate.Unsubscribe(UpdateAcid);
+            ManStatusEffectsExt.acidUpdate.Unsubscribe(UpdateAcid);
         }
 
         public override bool StatusInflicted(float damage, DamageTypesExt type, 
-            StatusType inflicted, Tank sourceTank, ref float damageMulti)
+            StatusTypeDef inflicted, Tank sourceTank, ref float damageMulti)
         {
             switch (type)
             {

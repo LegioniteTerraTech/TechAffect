@@ -18,7 +18,7 @@ namespace AffectTech
     {
         private ModuleEnergy Energy;
 
-        public StatusType ApplyerType = StatusType.FilmShield;
+        public StatusTypeDef ApplyerType = StatusTypeDef.FilmShield;
         public float ApplyRate = 16;
         public float PulseDelay = 1.25f;
         private float ActualApplyRate = 0;
@@ -47,7 +47,7 @@ namespace AffectTech
                 if (GetCurrentEnergy() > 0)
                 {
                     StatusCondition SC = damageable.GetComponent<StatusCondition>();
-                    ExtStatusEffect statusEffect;
+                    StatusEffectSelf statusEffect;
                     if (SC != null)
                     {
                         if (SC.effects.TryGetValue(ApplyerType, out statusEffect))

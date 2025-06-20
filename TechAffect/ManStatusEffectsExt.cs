@@ -6,10 +6,14 @@ using UnityEngine;
 using AffectTech.Stats;
 using Binding;
 using UnityEngine.SceneManagement;
+using TerraTechETCUtil;
 
 namespace AffectTech
 {
-    internal class ManExtStatusEffects : MonoBehaviour
+    /// <summary>
+    /// Vanilla does permit multiple statuses at once.
+    /// </summary>
+    internal class ManStatusEffectsExt : MonoBehaviour
     {
         private static readonly FieldInfo explodoType = typeof(Explosion).GetField("m_DamageType",
             BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
@@ -22,22 +26,22 @@ namespace AffectTech
         private bool isBright = false;
         private float reloop = Mathf.PI * 2;
         private static List<Action> pendingSubs = new List<Action>();
-        internal static HashSet<ExtStatusEffect> pendingSpread = new HashSet<ExtStatusEffect>();
+        internal static HashSet<StatusEffectSelf> pendingSpread = new HashSet<StatusEffectSelf>();
 
         public static EventNoParams acidUpdate = new EventNoParams();
         public static EventNoParams spreadUpdate = new EventNoParams();
 
-        internal static Dictionary<StatusType, ExtStatusEffect> effectsPrefabs =
-            new Dictionary<StatusType, ExtStatusEffect>();
+        internal static Dictionary<StatusTypeDef, StatusEffectSelf> effectsPrefabs =
+            new Dictionary<StatusTypeDef, StatusEffectSelf>();
 
-        internal static Dictionary<StatusType, Stack<ExtStatusEffect>> effectsPool =
-            new Dictionary<StatusType, Stack<ExtStatusEffect>>();
+        internal static Dictionary<StatusTypeDef, Stack<StatusEffectSelf>> effectsPool =
+            new Dictionary<StatusTypeDef, Stack<StatusEffectSelf>>();
 
 
 
         private void FirstInit()
         {
-            if (!effectsPrefabs.Any())
+            if (!targetModStatuses.Any())
             {
                 RegisterEffect(new SEAcid());
                 RegisterEffect(new SEEMP());
@@ -116,7 +120,7 @@ namespace AffectTech
         private static void DoAddModReg(TankBlock item, float strength)
         {
             ModuleRegulator reg = item.gameObject.AddComponent<ModuleRegulator>();
-            reg.ApplyerType = StatusType.FilmShield;
+            reg.ApplyerType = StatusTypeDef.FilmShield;
             reg.ApplyRate = 16f * strength;
             reg.DrainRate = 7.5f * strength;
             reg.enabled = true;
@@ -125,7 +129,7 @@ namespace AffectTech
         private static void DoAddModReg2(TankBlock item, float strength)
         {
             ModuleRegulator reg = item.gameObject.AddComponent<ModuleRegulator>();
-            reg.ApplyerType = StatusType.Overclock;
+            reg.ApplyerType = StatusTypeDef.Overclock;
             reg.ApplyRate = 16f * strength;
             reg.DrainRate = 0;
             reg.enabled = true;
@@ -154,7 +158,7 @@ namespace AffectTech
             SpecialDamageType SDT = WR.gameObject.AddComponent<SpecialDamageType>();
             SDT.OverrideDamageType = DamageTypesExt.Rust;
             SDT.OnPool();
-        }
+        } 
         private static void DoAddModWeap3(TankBlock item, float strength)
         {
             ParticleSystem PS = (ParticleSystem)StatusCondition.flameParticles.GetValue(item.GetComponent<ModuleWeaponFlamethrower>());
@@ -191,39 +195,96 @@ namespace AffectTech
 
 
 
-        internal void RegisterEffect(ExtStatusEffect effect)
+
+        /// <summary>
+        /// Adds the effect to ManStatusEffects
+        /// </summary>
+        internal void RegisterEffect(StatusEffectSelf effect)
         {
-            if (effect.StatType == StatusType.NULL)
+            if (effect.StatType == StatusTypeDef.NULL)
                 throw new InvalidOperationException("ManStatus encountered " + effect.GetType() + " of StatusType " +
                     effect.StatType + " which is not a valid StatusType");
             if (effectsPrefabs.ContainsKey(effect.StatType))
                 throw new InvalidOperationException("ManStatus encountered " + effect.GetType() + " of StatusType " + 
                     effect.StatType + " which already has StatType set up to a valid instance");
             effectsPrefabs.Add(effect.StatType, effect);
-            effectsPool.Add(effect.StatType, new Stack<ExtStatusEffect>(8));
+            effectsPool.Add(effect.StatType, new Stack<StatusEffectSelf>(8));
         }
-        private static ExtStatusEffect GetPooledEffect(StatusType type)
+
+
+        private static int curModStatCount = 0;
+        private static Dictionary<StatusEffect.EffectTypes, StatusEffectExternal> targetModStatuses = new Dictionary<StatusEffect.EffectTypes, StatusEffectExternal>();
+        private static List<StatusEffectExternal> currentModStatuses = new List<StatusEffectExternal>();
+        /// <summary>
+        /// Adds the effect to ManStatusEffects
+        /// </summary>
+        internal void RegisterEffect(StatusEffectExternal effect)
+        {
+            if (effect.StatusType < 0)
+                throw new InvalidOperationException("ManStatus encountered " + effect.GetType() + " of StatusType " +
+                    effect.StatusType.ToString() + " which is not a valid StatusType");
+            if (targetModStatuses.ContainsKey(effect.StatusType))
+                throw new InvalidOperationException("ManStatus encountered " + effect.GetType() + " of StatusType " +
+                    effect.StatusType.ToString() + " which already has StatType set up to a valid instance");
+            targetModStatuses.Add(effect.StatusType, effect);
+            InvokeHelper.InvokeSingle(PushNewEffects, 1f, true);
+        }
+
+        private static FieldInfo statusEffectLookup = typeof(ManStatusEffects).GetField("m_StatusEffectsLookup", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static FieldInfo statusEffectsAll = typeof(ManStatusEffects).GetField("m_AllStatusEffectTypes", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private static int vanillaStatCount = 0;
+        private static void PushNewEffects()
+        {
+            StatusEffect[] statuses = (StatusEffect[])statusEffectLookup.GetValue(ManStatusEffects.inst);
+            StatusEffect.EffectTypes[] statusTypes = (StatusEffect.EffectTypes[])statusEffectsAll.GetValue(ManStatusEffects.inst);
+            if (vanillaStatCount == 0)
+                vanillaStatCount = statuses.Length;
+            foreach (var stat in currentModStatuses)
+            {
+                stat.DeInit();
+            }
+            currentModStatuses.Clear();
+            curModStatCount = targetModStatuses.Count;
+            int combinedStatCount = vanillaStatCount + curModStatCount;
+            Array.Resize(ref statuses, combinedStatCount);
+            Array.Resize(ref statusTypes, combinedStatCount);
+            for (int i = vanillaStatCount - 1; i < statuses.Length; i++)
+            {
+                int ourModIndexer = 1 - vanillaStatCount;
+                var pair = targetModStatuses.ElementAt(ourModIndexer);
+                statuses[i] = pair.Value.Init();
+                statusTypes[i] = pair.Key;
+                currentModStatuses.Add(pair.Value);
+            }
+
+            statusEffectLookup.SetValue(ManStatusEffects.inst, statuses);
+            statusEffectsAll.SetValue(ManStatusEffects.inst, statusTypes);
+        }
+
+
+        private static StatusEffectSelf GetPooledEffect(StatusTypeDef type)
         {
             if (effectsPool[type].Any())
             {
                 return effectsPool[type].Pop();
             }
             else
-                return (ExtStatusEffect)Activator.CreateInstance(effectsPrefabs[type].GetType());
+                return (StatusEffectSelf)Activator.CreateInstance(effectsPrefabs[type].GetType());
         }
-        internal static ExtStatusEffect CreateEffect(StatusCondition cond, StatusType type, float value, ref float damageMulti)
+        internal static StatusEffectSelf CreateEffect(StatusCondition cond, StatusTypeDef type, float value, ref float damageMulti)
         {
             var effect = GetPooledEffect(type);
             effect.Init(cond, value, ref damageMulti);
             return effect;
         }
-        internal static ExtStatusEffect CreateEffect(StatusCondition cond, StatusType type, ManDamage.DamageInfo info, ref float damageMulti)
+        internal static StatusEffectSelf CreateEffect(StatusCondition cond, StatusTypeDef type, ManDamage.DamageInfo info, ref float damageMulti)
         {
             var effect = GetPooledEffect(type);
             effect.Init(cond, info, ref damageMulti);
             return effect;
         }
-        internal static void ReturnEffectToPool(ExtStatusEffect effect)
+        internal static void ReturnEffectToPool(StatusEffectSelf effect)
         {
             effect.DeInit();
             effect.impactValue = 0;
@@ -231,7 +292,7 @@ namespace AffectTech
             effectsPool[effect.StatType].Push(effect);
         }
 
-        internal static void PrepSpread(ExtStatusEffect effect)
+        internal static void PrepSpread(StatusEffectSelf effect)
         {
             if (!pendingSpread.Contains(effect))
             {
@@ -239,7 +300,7 @@ namespace AffectTech
             }
         }
 
-        private void Update()
+        internal void Update()
         {
             FirstInit();
 
